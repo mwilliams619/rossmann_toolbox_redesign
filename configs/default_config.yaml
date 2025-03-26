@@ -1,0 +1,9 @@
+# configs/default_config.yaml
+model:
+  embedding_dim: 768
+  dropout: 0.3
+
+training:
+  batch_size: 32
+  learning_rate: 1e-4
+  num_epochs: 100

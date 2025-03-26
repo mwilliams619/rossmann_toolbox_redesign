@@ -1,0 +1,50 @@
+2025-03-25 20:34:18,003 - INFO - Starting training process
+2025-03-25 20:34:18,003 - INFO - Configuration:
+device: cuda
+seed: 42
+data_dir: data
+processed_data_file: data/processed/processed_data.pkl
+embeddings_file: data/processed/embeddings.pt
+embedding_dim: 640
+max_seq_length: 65
+dropout: 0.3
+batch_size: 32
+num_epochs: 50
+learning_rate: 0.0003
+weight_decay: 0.01
+gradient_clip_val: 1.0
+early_stopping_patience: 10
+output_dir: model_outputs/20250325_203418
+best_model_path: model_outputs/20250325_203418/best_model.pth
+final_model_path: model_outputs/20250325_203418/final_model.pth
+train_ratio: 0.8
+val_ratio: 0.2
+optimizer_type: AdamW
+scheduler_type: ReduceLROnPlateau
+scheduler_patience: 5
+scheduler_factor: 0.5
+2025-03-25 20:34:18,003 - INFO - Loading data
+2025-03-25 20:34:18,148 - INFO - Preparing data loaders
+2025-03-25 20:34:18,149 - INFO - Initializing model
+2025-03-25 20:34:18,289 - INFO - Starting model training
+2025-03-25 20:35:03,922 - INFO - Final model saved to model_outputs/20250325_203418/final_model.pth
+2025-03-25 20:35:03,922 - INFO - Making predictions on validation set
+2025-03-25 20:35:04,068 - INFO - Evaluating model performance
+2025-03-25 20:35:04,186 - ERROR - An error occurred during training: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (72,) + inhomogeneous part.
+Traceback (most recent call last):
+  File "/home/matt/Dev/ross_redesign/src/training/training_run.py", line 78, in main
+    metrics = evaluator.calculate_metrics(predictions, val_labels)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/Dev/ross_redesign/src/utils/eval_metrics.py", line 7, in calculate_metrics
+    accuracy = np.mean(np.argmax(predictions, axis=1) == np.argmax(labels, axis=1))
+                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/miniconda3/envs/rossmann_modern/lib/python3.12/site-packages/numpy/_core/fromnumeric.py", line 1342, in argmax
+    return _wrapfunc(a, 'argmax', axis=axis, out=out, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/miniconda3/envs/rossmann_modern/lib/python3.12/site-packages/numpy/_core/fromnumeric.py", line 54, in _wrapfunc
+    return _wrapit(obj, method, *args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/miniconda3/envs/rossmann_modern/lib/python3.12/site-packages/numpy/_core/fromnumeric.py", line 42, in _wrapit
+    conv = _array_converter(obj)
+           ^^^^^^^^^^^^^^^^^^^^^
+ValueError: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (72,) + inhomogeneous part.

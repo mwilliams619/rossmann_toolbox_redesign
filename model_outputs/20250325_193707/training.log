@@ -1,0 +1,62 @@
+2025-03-25 19:37:07,488 - INFO - Starting training process
+2025-03-25 19:37:07,488 - INFO - Configuration:
+device: cuda
+seed: 42
+data_dir: data
+processed_data_file: data/processed/processed_data.pkl
+embeddings_file: data/processed/embeddings.pt
+embedding_dim: 768
+max_seq_length: 65
+dropout: 0.3
+batch_size: 32
+num_epochs: 50
+learning_rate: 0.0003
+weight_decay: 0.01
+gradient_clip_val: 1.0
+early_stopping_patience: 10
+output_dir: model_outputs/20250325_193707
+best_model_path: model_outputs/20250325_193707/best_model.pth
+final_model_path: model_outputs/20250325_193707/final_model.pth
+train_ratio: 0.8
+val_ratio: 0.2
+optimizer_type: AdamW
+scheduler_type: ReduceLROnPlateau
+scheduler_patience: 5
+scheduler_factor: 0.5
+2025-03-25 19:37:07,488 - INFO - Loading data
+2025-03-25 19:37:07,779 - INFO - Preparing data loaders
+2025-03-25 19:37:07,779 - INFO - Initializing model
+2025-03-25 19:37:07,919 - INFO - Starting model training
+2025-03-25 19:37:08,343 - ERROR - An error occurred during training: Given groups=1, weight of size [128, 768, 1], expected input[32, 1280, 1] to have 768 channels, but got 1280 channels instead
+Traceback (most recent call last):
+  File "/home/matt/Dev/ross_redesign/src/training/training_run.py", line 63, in main
+    best_model = train_model(model, train_loader, val_loader, config)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/Dev/ross_redesign/src/training/training_loop.py", line 119, in train_model
+    train_loss = train_epoch(model, train_loader, criterion, optimizer, config)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/Dev/ross_redesign/src/training/training_loop.py", line 49, in train_epoch
+    outputs = model(embeddings)
+              ^^^^^^^^^^^^^^^^^
+  File "/home/matt/miniconda3/envs/rossmann_modern/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/miniconda3/envs/rossmann_modern/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/Dev/ross_redesign/src/models/seq_detect.py", line 180, in forward
+    x = self.input_proj(x)
+        ^^^^^^^^^^^^^^^^^^
+  File "/home/matt/miniconda3/envs/rossmann_modern/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/miniconda3/envs/rossmann_modern/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/miniconda3/envs/rossmann_modern/lib/python3.12/site-packages/torch/nn/modules/conv.py", line 375, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/matt/miniconda3/envs/rossmann_modern/lib/python3.12/site-packages/torch/nn/modules/conv.py", line 370, in _conv_forward
+    return F.conv1d(
+           ^^^^^^^^^
+RuntimeError: Given groups=1, weight of size [128, 768, 1], expected input[32, 1280, 1] to have 768 channels, but got 1280 channels instead

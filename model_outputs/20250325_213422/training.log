@@ -1,0 +1,35 @@
+2025-03-25 21:34:22,730 - INFO - Starting training process
+2025-03-25 21:34:22,730 - INFO - Configuration:
+device: cuda
+seed: 42
+data_dir: data
+processed_data_file: data/processed/processed_data.pkl
+embeddings_file: data/processed/embeddings.pt
+embedding_dim: 640
+max_seq_length: 65
+dropout: 0.3
+batch_size: 32
+num_epochs: 50
+learning_rate: 0.0003
+weight_decay: 0.01
+gradient_clip_val: 1.0
+early_stopping_patience: 10
+output_dir: model_outputs/20250325_213422
+best_model_path: model_outputs/20250325_213422/best_model.pth
+final_model_path: model_outputs/20250325_213422/final_model.pth
+train_ratio: 0.8
+val_ratio: 0.2
+optimizer_type: AdamW
+scheduler_type: ReduceLROnPlateau
+scheduler_patience: 5
+scheduler_factor: 0.5
+2025-03-25 21:34:22,731 - INFO - Loading data
+2025-03-25 21:34:22,874 - INFO - Preparing data loaders
+2025-03-25 21:34:22,875 - INFO - Initializing model
+2025-03-25 21:34:23,024 - INFO - Starting model training
+2025-03-25 21:35:08,334 - INFO - Final model saved to model_outputs/20250325_213422/final_model.pth
+2025-03-25 21:35:08,334 - INFO - Making predictions on validation set
+2025-03-25 21:35:08,467 - INFO - Evaluating model performance
+2025-03-25 21:35:08,553 - INFO - Evaluation metrics:
+{'accuracy': 0.9682332463011314}
+2025-03-25 21:35:08,553 - INFO - Training process completed successfully
