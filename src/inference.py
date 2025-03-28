@@ -51,7 +51,7 @@ class SequencePredictor:
     
     def get_class_name(self, class_id):
         """Map numeric class ID to human-readable name"""
-        class_names = ["Class 0", "Class 1", "Class 2", "Class 3"]  # Replace with your actual class names
+        class_names = ["FAD", "NAD", "NADP", "SAM"]  # Replace with your actual class names
         return class_names[class_id]
 
 # Example usage
@@ -62,8 +62,8 @@ if __name__ == "__main__":
     
     # Example sequences
     test_sequences = [
-        "MTEITAALVKDAGILTLFEASKAGHPA",  # Replace with your actual test sequences
-        "MTKSLAGKGVIHSFNDSLPWHAFGDL"
+        'AGVRLGDPVLICGAGPIGLITMLCAKAAGACPLVITDIDEGR', # WT, binds NAD
+        'AGVRLGDPVLICGAGPIGLITMLCAKAAGACPLVITSRDEGR' # D211S, I212R mutant, binds NADP
     ]
     
     # Get predictions

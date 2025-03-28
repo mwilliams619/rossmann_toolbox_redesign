@@ -22,7 +22,6 @@ class SequenceDataset(Dataset):
         else:
             embeddings = torch.tensor(self.embeddings[idx], dtype=torch.float)
         
-        # Ensure we have a sequence dimension - THIS IS THE KEY FIX
         if len(embeddings.shape) == 1:  # If just (embedding_dim,)
             embeddings = embeddings.unsqueeze(0)  # Make it (1, embedding_dim)
 
@@ -193,27 +192,9 @@ class ModernSeqCoreEvaluator(nn.Module):
         
         return F.softmax(x, dim=1)
 
-class PositionwiseFeedForward(nn.Module):
-    """Position-wise Feed Forward Network from Transformer architecture"""
-    def __init__(self, d_model, d_ff, dropout=0.1):
-        super(PositionwiseFeedForward, self).__init__()
-        self.linear1 = nn.Linear(d_model, d_ff)
-        self.linear2 = nn.Linear(d_ff, d_model)
-        self.dropout = nn.Dropout(dropout)
-        self.norm = nn.LayerNorm(d_model)
-
-    def forward(self, x):
-        residual = x
-        x = self.linear1(x)
-        x = F.gelu(x)
-        x = self.dropout(x)
-        x = self.linear2(x)
-        x = self.dropout(x)
-        return self.norm(x + residual)
-
 class ModernSeqCoreDetector(nn.Module):
     """Modern version of the SeqCoreDetector for specific position detection"""
-    def __init__(self, embedding_dim=768, dropout=0.3):
+    def __init__(self, embedding_dim=640, dropout=0.3):
         super(ModernSeqCoreDetector, self).__init__()
 
         # Input projection
@@ -278,104 +259,3 @@ class ModernSeqCoreDetector(nn.Module):
         x = self.classifier(x)  # (batch_size, seq_length, 1)
         
         return x
-
-class ModernPreprocessedEmbeddingModel(nn.Module):
-    """
-    Model that accepts pre-computed embeddings directly
-    (to work with the user's preprocessing pipeline)
-    """
-    def __init__(self, embedding_dim=768, dropout=0.3):
-        super(ModernPreprocessedEmbeddingModel, self).__init__()
-
-        # Feature extraction
-        self.feature_extractor = nn.Sequential(
-            nn.Linear(embedding_dim, 256),
-            nn.LayerNorm(256),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            ResidualMLP(256, 256),
-            ResidualMLP(256, 128),
-        )
-        
-        # Classification head
-        self.classifier = nn.Sequential(
-            nn.Linear(128, 64),
-            nn.LayerNorm(64),
-            nn.GELU(),
-            nn.Dropout(dropout/2),
-            nn.Linear(64, 32),
-            nn.LayerNorm(32),
-            nn.GELU(),
-            nn.Linear(32, 4)
-        )
-    
-    def forward(self, x):
-        # Input is pre-computed embeddings
-        features = self.feature_extractor(x)
-        logits = self.classifier(features)
-        return F.softmax(logits, dim=1)
-
-class ResidualMLP(nn.Module):
-    """Residual MLP block"""
-    def __init__(self, in_features, out_features, dropout=0.1):
-        super(ResidualMLP, self).__init__()
-        self.same_dim = in_features == out_features
-
-        self.linear1 = nn.Linear(in_features, out_features)
-        self.norm1 = nn.LayerNorm(out_features)
-        self.act1 = nn.GELU()
-        self.dropout1 = nn.Dropout(dropout)
-        
-        self.linear2 = nn.Linear(out_features, out_features)
-        self.norm2 = nn.LayerNorm(out_features)
-        self.dropout2 = nn.Dropout(dropout)
-        
-        if not self.same_dim:
-            self.shortcut = nn.Linear(in_features, out_features)
-            
-    def forward(self, x):
-        residual = x
-        
-        x = self.linear1(x)
-        x = self.norm1(x)
-        x = self.act1(x)
-        x = self.dropout1(x)
-        
-        x = self.linear2(x)
-        x = self.norm2(x)
-        x = self.dropout2(x)
-        
-        if not self.same_dim:
-            residual = self.shortcut(residual)
-            
-        x = x + residual
-        return F.gelu(x)
-
-class EnsembleModel(nn.Module):
-    """
-    Ensemble model combining multiple predictions
-    """
-    def __init__(self, models, weights=None):
-        super(EnsembleModel, self).__init__()
-        self.models = nn.ModuleList(models)
-
-        if weights is None:
-            # Equal weighting
-            weights = [1.0/len(models)] * len(models)
-            
-        self.weights = nn.Parameter(torch.tensor(weights, dtype=torch.float), 
-                                requires_grad=True)
-        
-    def forward(self, x):
-        # Get predictions from all models
-        preds = [model(x) for model in self.models]
-        preds = torch.stack(preds, dim=0)  # (num_models, batch_size, num_classes)
-        
-        # Normalize weights
-        weights = F.softmax(self.weights, dim=0)
-        
-        # Compute weighted average
-        weighted_preds = weights.view(-1, 1, 1) * preds
-        ensemble_pred = weighted_preds.sum(dim=0)
-        
-        return ensemble_pred
