@@ -7,51 +7,58 @@ import numpy as np
 import math
 
 class SequenceDataset(Dataset):
-    """Dataset for protein sequence embeddings"""
-    def __init__(self, embeddings, labels=None):
+    def __init__(self, embeddings, labels, dataframe=None):
         self.embeddings = embeddings
         self.labels = labels
+        self.dataframe = dataframe
 
     def __len__(self):
         return len(self.embeddings)
 
     def __getitem__(self, idx):
-        # Check if embeddings is already a tensor
-        if isinstance(self.embeddings[idx], torch.Tensor):
-            embeddings = self.embeddings[idx].clone().detach().float()
+        # Get embeddings - handle both numpy arrays and torch tensors
+        embedding = self.embeddings[idx]
+        if isinstance(embedding, np.ndarray):
+            embedding = torch.from_numpy(embedding).float()
         else:
-            embeddings = torch.tensor(self.embeddings[idx], dtype=torch.float)
+            embedding = embedding.clone().detach().float()
         
-        if len(embeddings.shape) == 1:  # If just (embedding_dim,)
-            embeddings = embeddings.unsqueeze(0)  # Make it (1, embedding_dim)
-
-        item = {'embeddings': embeddings}
+        # Get label (always available)
+        label = torch.tensor(self.labels[idx], dtype=torch.long)
         
-        if self.labels is not None:
-            if isinstance(self.labels[idx], torch.Tensor):
-                item['labels'] = self.labels[idx].clone().detach().float()
-            else:
-                item['labels'] = torch.tensor(self.labels[idx], dtype=torch.float)
-                
+        # Create return dict
+        item = {
+            'embeddings': embedding,
+            'labels': label
+        }
+        
+        # If dataframe is available, add sequence labels
+        if self.dataframe is not None:
+            # Get corresponding row from dataframe
+            row = self.dataframe.iloc[idx]
+            seq = row['seq']
+            
+            # Process ss_pos to get critical residue positions
+            ss_pos = []
+            if isinstance(row['ss_pos'], str):
+                # Handle string representation of numpy array
+                import re
+                ss_pos = [int(num) for num in re.findall(r'np\.int64\((\d+)\)', row['ss_pos'])]
+            elif isinstance(row['ss_pos'], list):
+                # Handle list of positions
+                ss_pos = [int(pos) for pos in row['ss_pos']]
+            
+            # Create binary label tensor
+            seq_label = torch.zeros(len(seq))
+            for pos in ss_pos:
+                if 0 <= pos < len(seq):  # Safety check
+                    seq_label[pos] = 1.0
+            
+            # Add sequence information to return dict
+            item['sequence_labels'] = seq_label.float()
+            item['seq'] = seq
+        
         return item
-
-class SEBlock(nn.Module):
-    """Squeeze-and-Excitation block for enhancing informative features"""
-    def __init__(self, channels, reduction=16):
-        super(SEBlock, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool1d(1)
-        self.fc = nn.Sequential(
-        nn.Linear(channels, channels // reduction, bias=False),
-        nn.GELU(),
-        nn.Linear(channels // reduction, channels, bias=False),
-        nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        b, c, _ = x.size()
-        y = self.avg_pool(x).view(b, c)
-        y = self.fc(y).view(b, c, 1)
-        return x * y.expand_as(x)
 
 class ResidualConvBlock(nn.Module):
     """Residual block with 1D convolutions"""
@@ -123,6 +130,24 @@ class SelfAttention1D(nn.Module):
         out = self.gamma * out + x
         
         return out
+    
+class SEBlock(nn.Module):
+    """Squeeze-and-Excitation block for enhancing informative features"""
+    def __init__(self, channels, reduction=16):
+        super(SEBlock, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool1d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channels, channels // reduction, bias=False),
+            nn.GELU(),
+            nn.Linear(channels // reduction, channels, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1)
+        return x * y.expand_as(x)
 
 class ModernSeqCoreEvaluator(nn.Module):
     """Modern version of the SeqCoreEvaluator using advanced components"""

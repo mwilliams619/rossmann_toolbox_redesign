@@ -1,7 +1,7 @@
 import torch
 from utils.data_processing import DataProcessor
-from models.seq_detect import ModernSeqCoreEvaluator
-from training.training_loop import train_model
+from models.seq_detect import ModernSeqCoreEvaluator, ModernSeqCoreDetector
+from training.training_loop import train_multiclass_model
 from utils.inference import InferenceHelper
 from utils.eval_metrics import ModelEvaluator
 import os
@@ -38,8 +38,18 @@ class TrainingConfig:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.output_dir = Path(f"model_outputs/{timestamp}")
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.best_model_path = self.output_dir / "best_model.pth"
-        self.final_model_path = self.output_dir / "final_model.pth"
+        
+        # Paths for ModernSeqCoreEvaluator (classifier)
+        self.evaluator_best_model_path = self.output_dir / "best_evaluator_model.pth"
+        self.evaluator_final_model_path = self.output_dir / "final_evaluator_model.pth"
+        
+        # Paths for ModernSeqCoreDetector (sequence tagger)
+        self.detector_best_model_path = self.output_dir / "best_detector_model.pth"
+        self.detector_final_model_path = self.output_dir / "final_detector_model.pth"
+        
+        # For backward compatibility
+        self.best_model_path = self.evaluator_best_model_path
+        self.final_model_path = self.evaluator_final_model_path
         
         # Training split 
         self.train_ratio = 0.8
@@ -65,4 +75,3 @@ class TrainingConfig:
     def __str__(self):
         """String representation of config"""
         return "\n".join(f"{k}: {v}" for k, v in self.__dict__.items())
-
