@@ -1,7 +1,6 @@
 import torch
-from utils.data_processing import DataProcessor
+from data.data_loader import DataProcessor
 from models.seq_detect import ModernSeqCoreEvaluator, ModernSeqCoreDetector
-from training.training_loop import train_multiclass_model
 from utils.inference import InferenceHelper
 from utils.eval_metrics import ModelEvaluator
 import os
@@ -16,11 +15,12 @@ class TrainingConfig:
         
         # Data paths
         self.data_dir = Path("data")
-        self.processed_data_file = self.data_dir / "processed" / "processed_data.pkl"
-        self.embeddings_file = self.data_dir / "processed" / "embeddings.pt"
+        self.processed_data_file = self.data_dir / "processed" / "rossmann_full_seq_processed.pkl"
+        self.embeddings_file = self.data_dir / "processed" / "rossmann_full_seq_embeddings.pt"
         
         # Model settings
-        self.embedding_dim = 640  # ESM-2 dimension
+        self.embedding_dim = 1280  # ESM-2 dimension
+        self.detector_embedding_dim = 1280
         self.max_seq_length = 65
         self.dropout = 0.3
         
@@ -35,17 +35,17 @@ class TrainingConfig:
         self.early_stopping_patience = 10
         
         # Model saving
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.output_dir = Path(f"model_outputs/{timestamp}")
+        # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.output_dir = Path(f"model_outputs/")
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
         # Paths for ModernSeqCoreEvaluator (classifier)
-        self.evaluator_best_model_path = self.output_dir / "best_evaluator_model.pth"
-        self.evaluator_final_model_path = self.output_dir / "final_evaluator_model.pth"
+        self.evaluator_best_model_path = self.output_dir / "evaluator" / "best_evaluator_model.pth"
+        self.evaluator_final_model_path = self.output_dir / "evaluator"/ "final_evaluator_model.pth"
         
         # Paths for ModernSeqCoreDetector (sequence tagger)
-        self.detector_best_model_path = self.output_dir / "best_detector_model.pth"
-        self.detector_final_model_path = self.output_dir / "final_detector_model.pth"
+        self.detector_best_model_path = self.output_dir / "detector" / "best_detector_model.pth"
+        self.detector_final_model_path = self.output_dir /"detector"/ "final_detector_model.pth"
         
         # For backward compatibility
         self.best_model_path = self.evaluator_best_model_path

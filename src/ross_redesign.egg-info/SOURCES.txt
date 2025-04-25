@@ -1,6 +1,8 @@
 LICENSE
 setup.py
 src/data/__init__.py
+src/data/data_loader.py
+src/data/dataset.py
 src/data/preprocessing.py
 src/data/process_data.py
 src/models/__init__.py
@@ -10,12 +12,17 @@ src/ross_redesign.egg-info/SOURCES.txt
 src/ross_redesign.egg-info/dependency_links.txt
 src/ross_redesign.egg-info/top_level.txt
 src/training/__init__.py
+src/training/detector_trainer.py
+src/training/evaluator_trainer.py
+src/training/main.py
+src/training/trainer_base.py
 src/training/training_config.py
 src/training/training_loop.py
 src/training/training_run.py
 src/training/utilities.py
+src/training/scripts/__init__.py
+src/training/scripts/train_detector.py
 src/utils/__init__.py
-src/utils/data_processing.py
 src/utils/embeddings.py
 src/utils/eval_metrics.py
 src/utils/inference.py

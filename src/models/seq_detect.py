@@ -151,7 +151,7 @@ class SEBlock(nn.Module):
 
 class ModernSeqCoreEvaluator(nn.Module):
     """Modern version of the SeqCoreEvaluator using advanced components"""
-    def __init__(self, embedding_dim=640, dropout=0.3):
+    def __init__(self, embedding_dim=1280, dropout=0.3):
         super(ModernSeqCoreEvaluator, self).__init__()
 
         # Input dimension adjustment (from ESM-2's 768 to processing dimension)
@@ -215,72 +215,56 @@ class ModernSeqCoreEvaluator(nn.Module):
         x = self.norm(x)
         x = self.classifier(x)
         
-        return F.softmax(x, dim=1)
+        return x
 
 class ModernSeqCoreDetector(nn.Module):
     """Modern version of the SeqCoreDetector for specific position detection"""
-    def __init__(self, embedding_dim=640, dropout=0.3):
-        super(ModernSeqCoreDetector, self).__init__()
-
-        # Input projection
-        self.input_proj = nn.Linear(embedding_dim, 128)
-        self.input_norm = nn.LayerNorm(128)
+    def __init__(self, embedding_dim=1280, hidden_dim=256, num_heads=8):
+        super().__init__()
         
-        # Convolutional blocks (channels-first format)
-        self.conv_blocks = nn.Sequential(
-            nn.Conv1d(128, 64, kernel_size=7, padding=3),
-            nn.BatchNorm1d(64),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            
-            SEBlock(64),
-            
-            nn.Conv1d(64, 64, kernel_size=5, padding=2),
-            nn.BatchNorm1d(64),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            
-            SEBlock(64)
+        # Transformer encoder for feature extraction
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=embedding_dim, 
+            nhead=num_heads,
+            dim_feedforward=hidden_dim * 4,
+            dropout=0.1,
+            batch_first=True
         )
-    
-        # Attention mechanism
-        self.attention = SelfAttention1D(64)
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=4)
         
-        # Final classification layers
-        self.classifier = nn.Sequential(
-            nn.Linear(64, 32),
-            nn.LayerNorm(32),
-            nn.GELU(),
-            nn.Dropout(dropout/2),
-            nn.Linear(32, 16),
-            nn.LayerNorm(16),
-            nn.GELU(),
-            nn.Linear(16, 4),
-            nn.Linear(4, 1),
+        # Core motif detector
+        self.core_detector = nn.Sequential(
+            nn.Linear(embedding_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(hidden_dim, 1),
+            nn.Sigmoid()
+        )
+        
+        # Critical residue detector
+        self.residue_detector = nn.Sequential(
+            nn.Linear(embedding_dim * 2, hidden_dim),  # Takes embedding + core context
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(hidden_dim, 1),
             nn.Sigmoid()
         )
     
     def forward(self, x):
-        # Input shape: (batch_size, seq_length, embedding_dim)
+        # Encode full sequence
+        encoded = self.encoder(x)
         
-        # Initial projection (batch_size, seq_length, 128)
-        x = self.input_proj(x)
-        x = self.input_norm(x)
-        x = F.gelu(x)
+        # Predict core region
+        core_scores = self.core_detector(encoded).squeeze(-1)
         
-        # Convert to channels-first for convolutions
-        x = x.transpose(1, 2)  # (batch_size, 128, seq_length)
+        # Create context-aware features using core prediction
+        core_mask = (core_scores > 0.5).float().unsqueeze(-1)
+        contextual_features = torch.cat([
+            encoded,
+            encoded * core_mask.expand_as(encoded)  # Only pass core region information
+        ], dim=-1)
         
-        # Apply convolutional blocks
-        x = self.conv_blocks(x)
+        # Predict critical residues
+        residue_scores = self.residue_detector(contextual_features).squeeze(-1)
         
-        # Apply attention
-        x = self.attention(x)
-        
-        # Convert back to sequence-first for per-position classification
-        x = x.transpose(1, 2)  # (batch_size, seq_length, 64)
-        
-        # Apply classifier to each position
-        x = self.classifier(x)  # (batch_size, seq_length, 1)
-        
-        return x
+        return core_scores, residue_scores
